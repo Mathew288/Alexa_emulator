@@ -1,12 +1,6 @@
-'''
-    Description: Create your own virtual assistant with Python.
-    Author: aulerjbailey
-    Version: 2.0.0
-    Video: https://youtu.be/Cr9O31eqXuA
-'''
+# Importación de los módulos necesarios
 import AVMSpeechMath as sm
 import AVMYT as yt
-import spoty
 import speech_recognition as sr
 import pyttsx3
 import pywhatkit
@@ -16,53 +10,58 @@ import wikipedia
 import pyjokes
 from time import time
 
+# Inicialización del tiempo de inicio
 start_time = time()
+
+# Inicialización del motor de síntesis de voz
 engine = pyttsx3.init()
 
-# name of the virtual assistant
+# Nombre del asistente virtual
 name = 'alexa'
-attemts = 0
+attempts = 0
 
-# keys
-with open('src/keys.json') as json_file:
-    keys = json.load(json_file)
 
-# colors
+
+# Colores para la salida en consola
 green_color = "\033[1;32;40m"
 red_color = "\033[1;31;40m"
 normal_color = "\033[0;37;40m"
 
-# get voices and set the first of them
+# Obtención de las voces disponibles y selección de la primera
 voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[0].id)
 
-# editing default configuration
+# Configuración adicional del motor de síntesis de voz
 engine.setProperty('rate', 178)
 engine.setProperty('volume', 0.7)
 
+# Carga de los nombres de los días en español e inglés desde archivos de texto
 day_es = [line.rstrip('\n') for line in open('src/day/day_es.txt')]
 day_en = [line.rstrip('\n') for line in open('src/day/day_en.txt')]
 
+# Función para iterar los nombres de los días
 def iterateDays(now):
     for i in range(len(day_en)):
         if day_en[i] in now:
             now = now.replace(day_en[i], day_es[i])
     return now
 
+# Función para obtener el día actual
 def getDay():
     now = date.today().strftime("%A, %d de %B del %Y").lower()
     return iterateDays(now)
 
+# Función para obtener el día hace cierta cantidad de días
 def getDaysAgo(rec):
-    value =""
+    value = ""
     if 'ayer' in rec:
-        days = 1
+        days = 0
         value = 'ayer'
     elif 'antier' in rec:
         days = 2
         value = 'antier'
     else:
-        rec = rec.replace(",","")
+        rec = rec.replace(",", "")
         rec = rec.split()
         days = 0
 
@@ -72,7 +71,7 @@ def getDaysAgo(rec):
                 break
             except:
                 pass
-    
+
     if days != 0:
         try:
             now = date.today() - timedelta(days=days)
@@ -87,23 +86,25 @@ def getDaysAgo(rec):
     else:
         return "No entendí"
 
+# Función para sintetizar y reproducir un texto
 def speak(text):
     engine.say(text)
     engine.runAndWait()
 
+# Función para obtener entrada de audio
 def get_audio():
     r = sr.Recognizer()
     status = False
 
     with sr.Microphone() as source:
-        print(f"{green_color}({attemts}) Escuchando...{normal_color}")
+        print(f"{green_color}({attempts}) Escuchando...{normal_color}")
         r.adjust_for_ambient_noise(source, duration=1)
         audio = r.listen(source)
         rec = ""
 
         try:
             rec = r.recognize_google(audio, language='es-ES').lower()
-            
+
             if name in rec:
                 rec = rec.replace(f"{name} ", "").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
                 status = True
@@ -111,41 +112,20 @@ def get_audio():
                 print(f"Vuelve a intentarlo, no reconozco: {rec}")
         except:
             pass
-    return {'text':rec, 'status':status}
+    return {'text': rec, 'status': status}
 
+# Bucle principal del programa
 while True:
+    # Obtener entrada de audio
     rec_json = get_audio()
 
     rec = rec_json['text']
     status = rec_json['status']
 
     if status:
+        # Procesar la entrada de voz
         if 'estas ahi' in rec:
             speak('Por supuesto')
-
-        elif 'reproduce' in rec:
-            if 'spotify' in rec:
-                music = rec.replace('reproduce en spotify', '')
-                speak(f'Reproduciendo {music}')
-                spoty.play(keys["spoty_client_id"], keys["spoty_client_secret"], music)
-            else:
-                music = rec.replace('reproduce', '')
-                speak(f'Reproduciendo {music}')
-                pywhatkit.playonyt(music)
-                # yt.play(music)
-
-        elif 'cuantos suscriptores tiene' in rec:
-            name_subs = rec.replace('cuantos suscriptores tiene', '')
-            
-            speak("Procesando...")
-            while True:
-                try:
-                    channel = yt.getChannelInfo(name_subs)
-                    speak(channel["name"] + " tiene " + channel["subs"])
-                    break
-                except:
-                    speak("Volviendo a intentar...")
-                    continue
 
         elif 'que' in rec:
             if 'hora' in rec:
@@ -170,16 +150,18 @@ while True:
 
         elif 'cuanto es' in rec:
             speak(sm.getResult(rec))
-
+       
+        # Terminar el programa si se recibe la orden
         elif 'descansa' in rec:
             speak("Saliendo...")
             break
 
         else:
             print(f"Vuelve a intentarlo, no reconozco: {rec}")
-        
-        attemts = 0
-    else:
-        attemts += 1
 
-print(f"{red_color} PROGRAMA FINALIZADO CON UNA DURACIÓN DE: { int(time() - start_time) } SEGUNDOS {normal_color}")
+        attempts = 0
+    else:
+        attempts += 1
+
+# Imprimir el tiempo de ejecución del programa al finalizar
+print(f"{red_color} PROGRAMA FINALIZADO CON UNA DURACIÓN DE: {int(time() - start_time)} SEGUNDOS {normal_color}")
